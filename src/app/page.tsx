@@ -22,12 +22,16 @@ export default function HomePage() {
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [warning, setWarning] = useState<string | null>(null);
 
   useEffect(() => {
     async function fetchInventory() {
       try {
         const response = await axios.get("/api/inventory");
         setInventory(response.data.data || []);
+        if (response.data.message) {
+          setWarning(response.data.message);
+        }
       } catch (err) {
         console.error(err);
         setError("Failed to load inventory.");
@@ -51,6 +55,12 @@ export default function HomePage() {
     <main className="min-h-screen bg-gray-50 p-10">
       <div className="max-w-6xl mx-auto">
         <h1 className="text-4xl font-bold mb-8">Inventory</h1>
+
+        {warning ? (
+          <div className="mb-6 rounded-xl bg-yellow-100 px-5 py-4 text-yellow-900">
+            {warning}
+          </div>
+        ) : null}
 
         {inventory.length === 0 ? (
           <div className="rounded-xl bg-white p-8 shadow-md">
