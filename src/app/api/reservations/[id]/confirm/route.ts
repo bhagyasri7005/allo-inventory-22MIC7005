@@ -3,18 +3,20 @@ import { prisma } from "@/lib/prisma";
 
 export async function POST(
   req: Request,
-  context: { params: Promise<{ id: string }> }
+  context: {
+    params: Promise<{ id: string }>
+  }
 ) {
 
   try {
 
-    const { id } = await context.params;
+    const { id } =
+      await context.params;
 
-    const reservation = await prisma.reservation.findUnique({
-      where: {
-        id,
-      },
-    });
+    const reservation =
+      await prisma.reservation.findUnique({
+        where: { id },
+      });
 
     if (!reservation) {
 
@@ -30,12 +32,14 @@ export async function POST(
 
     }
 
-    if (reservation.status === "CONFIRMED") {
+    if (
+      reservation.status !== "PENDING"
+    ) {
 
       return NextResponse.json(
         {
           success: false,
-          message: "Already confirmed",
+          message: "Already processed",
         },
         {
           status: 400,
@@ -44,30 +48,44 @@ export async function POST(
 
     }
 
+    if (
+      new Date() > reservation.expiresAt
+    ) {
+
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Reservation expired",
+        },
+        {
+          status: 410,
+        }
+      );
+
+    }
+
     const updatedReservation =
       await prisma.reservation.update({
-        where: {
-          id,
-        },
+
+        where: { id },
 
         data: {
           status: "CONFIRMED",
         },
+
       });
 
     return NextResponse.json({
       success: true,
-      reservation: updatedReservation,
+      data: updatedReservation,
     });
 
-  } catch (error) {
-
-    console.log(error);
+  } catch {
 
     return NextResponse.json(
       {
         success: false,
-        message: "Failed to confirm reservation",
+        message: "Confirmation failed",
       },
       {
         status: 500,
